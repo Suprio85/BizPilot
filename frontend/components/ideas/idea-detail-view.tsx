@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 interface IdeaDetailViewProps {
   ideaId: string
@@ -315,6 +316,30 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
         </TabsContent>
 
         <TabsContent value="models" className="space-y-6">
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle>Model Comparison</CardTitle>
+              <CardDescription>Compare revenue and margin across business models</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={idea.businessModels.map((m) => ({
+                  name: m.name,
+                  revenue: Number((m.revenue.match(/\d+/) || [0])[0]),
+                  margin: Number((m.profitMargin.match(/\d+/) || [0])[0]),
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="revenue" name="Revenue (K/mo)" fill="#10b981" />
+                  <Bar dataKey="margin" name="Margin (%)" fill="#f59e0b" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
           <div className="grid gap-6">
             {idea.businessModels.map((model) => (
               <Card key={model.id} className="border-border">
@@ -353,10 +378,10 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
                     </div>
                     <div className="text-center">
                       <div className="grid grid-cols-1 gap-2">
-                        <Link href={`/dashboard/ideas/${idea.id}/models?tab=analytics`}>
+                        <Link href={`/dashboard/ideas/${idea.id}/models/${model.id}`}>
                           <Button variant="outline" size="sm" className="w-full bg-transparent">
                             <BarChart3 className="w-4 h-4 mr-2" />
-                            View Details
+                            Open Model Page
                           </Button>
                         </Link>
                         <Link

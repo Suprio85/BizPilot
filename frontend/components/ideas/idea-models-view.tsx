@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useMemo, useState } from "react"
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
@@ -71,7 +72,14 @@ export function IdeaModelsView({ ideaId }: IdeaModelsViewProps) {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="text-sm text-muted-foreground">Churn: {m.churn}%</div>
-                  <Button variant="outline" size="sm" className="bg-transparent">Refine with AI</Button>
+                  <div className="flex gap-2">
+                    <Link href={`/dashboard/ideas/${idea.id}/models/${m.id}`} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full bg-transparent">Open model page</Button>
+                    </Link>
+                    <Link href={{ pathname: `/dashboard/ideas/${idea.id}/models`, query: { tab: "assistant", seed: `Focus on the ${m.name} for ${idea.title}. Help refine pricing and reduce churn. Current metrics: revenue ${m.revenue}K/mo, margin ${m.margin}%, churn ${m.churn}%.` } }}>
+                      <Button variant="outline" size="sm" className="bg-transparent">Ask AI</Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             ))}
