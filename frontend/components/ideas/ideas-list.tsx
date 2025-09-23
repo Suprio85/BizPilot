@@ -1,6 +1,5 @@
 "use client"
 
-import IdeaVisualizationDialog from "@/components/ideas/idea-visualization-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -73,8 +72,7 @@ export function IdeasList() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [categoryFilter, setCategoryFilter] = useState("all")
-  const [vizOpen, setVizOpen] = useState(false)
-  const [selectedIdea, setSelectedIdea] = useState<any | null>(null)
+  
 
   const filteredIdeas = mockIdeas.filter((idea) => {
     const matchesSearch =
@@ -222,17 +220,11 @@ export function IdeasList() {
                 <Button variant="outline" size="sm">
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedIdea(idea)
-                    setVizOpen(true)
-                  }}
-                  title="Visualize data/models"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                </Button>
+                <Link href={`/dashboard/ideas/${idea.id}/models?tab=analytics`} title="Business model charts">
+                  <Button variant="outline" size="sm">
+                    <BarChart3 className="w-4 h-4" />
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -258,7 +250,7 @@ export function IdeasList() {
           </CardContent>
         </Card>
       )}
-      <IdeaVisualizationDialog open={vizOpen} onOpenChange={setVizOpen} idea={selectedIdea} />
+      
     </div>
   )
 }

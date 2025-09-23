@@ -1,9 +1,11 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { X } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 
 type Idea = {
   id: number
@@ -41,9 +43,16 @@ export function IdeaVisualizationDialog({ open, onOpenChange, idea }: IdeaVisual
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>
-            {idea ? `Visualizations • ${idea.title}` : "Visualizations"}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>
+              {idea ? `Visualizations • ${idea.title}` : "Visualizations"}
+            </DialogTitle>
+            <DialogClose asChild>
+              <Button variant="ghost" size="sm" aria-label="Close dialog">
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogClose>
+          </div>
         </DialogHeader>
 
         <Tabs defaultValue="kpis" className="mt-2">
