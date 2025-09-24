@@ -17,6 +17,12 @@ interface Message {
   images?: { id: string; url: string; fileName: string }[]
 }
 
+interface ChatApiMessage {
+  role: 'user' | 'ai' | 'system'
+  content: string
+  images?: { id: string; data_url: string; file_name?: string }[]
+}
+
 const initialMessages: Message[] = [
   {
     id: "1",
@@ -75,6 +81,8 @@ export function AIChat({ seedPrompt, title }: AIChatProps = {}) {
   const handleSendMessage = async (content: string) => {
     if (!content.trim() && pendingImages.length === 0) return
 
+    console.log('User message:', content, pendingImages)
+
     const userMessage: Message = {
       id: Date.now().toString(),
       content: content.trim(),
@@ -89,18 +97,64 @@ export function AIChat({ seedPrompt, title }: AIChatProps = {}) {
     setIsLoading(true)
     setMessageCount((prev) => prev + 1)
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: generateAIResponse(content),
-        sender: "ai",
-        timestamp: new Date(),
-        suggestions: generateSuggestions(content),
+    try {
+      // Prepare API payload
+      // Convert internal messages to API format
+      const apiMessages: ChatApiMessage[] = [...messages, userMessage].map(m => ({
+        role: m.sender === 'ai' ? 'ai' : (m.sender === 'user' ? 'user' : 'system'),
+        content: m.content,
+        images: m.images?.map(img => ({ id: img.id, data_url: img.url, file_name: img.fileName }))
+      }))
+
+      // Convert newly attached pending images to base64 data URLs if they are object URLs
+      const imageData = await Promise.all(pendingImages.map(async (img) => {
+        // Fetch blob from object URL and convert to base64
+        try {
+          const blob = await fetch(img.url).then(r => r.blob())
+          const b64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          })
+          return { id: img.id, data_url: b64, file_name: img.fileName }
+        } catch (e) {
+          console.warn('Failed to convert image', img.fileName, e)
+          return { id: img.id, data_url: img.url, file_name: img.fileName }
+        }
+      }))
+
+      const resp = await fetch('http://localhost:8000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages, images: imageData })
+      })
+      if (!resp.ok) {
+        const errTxt = await resp.text()
+        throw new Error(`Chat API error ${resp.status}: ${errTxt}`)
       }
-      setMessages((prev) => [...prev, aiResponse])
+      const data = await resp.json()
+      const reply: Message = {
+        id: Date.now().toString() + '_ai',
+        content: data.reply || '(no response)',
+        sender: 'ai',
+        timestamp: new Date(),
+        // Server currently doesn't return suggestions; we can generate locally
+        suggestions: generateSuggestions(content)
+      }
+      setMessages(prev => [...prev, reply])
+    } catch (e) {
+      console.error('Chat send failed', e)
+      const errorMsg: Message = {
+        id: Date.now().toString() + '_error',
+        content: 'Error contacting AI service. Please try again.',
+        sender: 'ai',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, errorMsg])
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const generateAIResponse = (userInput: string): string => {

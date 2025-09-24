@@ -1,24 +1,24 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Logo } from "@/components/ui/logo"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/ui/logo"
+import { cn } from "@/lib/utils"
 import {
+  BarChart3,
+  BookOpen,
+  CreditCard,
+  Crown,
   Home,
   Lightbulb,
-  BarChart3,
-  Settings,
-  CreditCard,
   MessageSquare,
+  Settings,
   Users,
-  BookOpen,
   X,
-  Crown,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useState } from "react"
 
 interface SidebarProps {
   open: boolean
@@ -30,6 +30,7 @@ const navigation = [
   { name: "My Ideas", href: "/dashboard/ideas", icon: Lightbulb },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, premium: true },
   { name: "AI Chat", href: "/dashboard/chat", icon: MessageSquare },
+  { name: "Daily Updates", href: "/dashboard/daily-updates", icon: BarChart3 },
   { name: "Community", href: "/dashboard/community", icon: Users },
   { name: "Learning", href: "/dashboard/learning", icon: BookOpen },
 ]

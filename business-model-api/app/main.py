@@ -4,7 +4,8 @@ from app.database import engine
 from app.models import user  # Import to register models
 from app.routers.auth import router as auth_router, user_router
 from app.routers.ideas import router as ideas_router
-from app.routers.chat import router as chat_router
+from app.routers.daily_updates import router as daily_router
+
 
 # Create database tables
 user.Base.metadata.create_all(bind=engine)
@@ -28,7 +29,8 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(ideas_router)
-app.include_router(chat_router)
+app.include_router(daily_router)
+# app.include_router(chat_router)
 
 @app.get("/")
 def read_root():
