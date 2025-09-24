@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/contexts/auth-context"
+import { saveIdea, transformApiResponseToStoredIdea } from "@/lib/ideas-store"
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -62,29 +63,25 @@ export function IdeaCreationWizard() {
       // Generate business models - submit to backend
       setIsSubmitting(true)
       try {
+        // Map frontend form fields to backend expected schema (BusinessIdeaRequest)
         const requestBody = {
           title: formData.title,
           description: formData.description,
           category: formData.category,
-          location: formData.location || undefined,
-          budgetRange: formData.budget || undefined,
-          timelineRange: formData.timeline || undefined,
-          targetMarket: formData.targetMarket || undefined,
-          competitors: formData.competitors || undefined,
-          uniqueValue: formData.uniqueValue || undefined,
-          businessModelPref: formData.businessModel || undefined,
-          voiceNotes: formData.voiceInput || undefined,
-          attachments: formData.uploadedFiles.length > 0 ? formData.uploadedFiles.map((file: any) => ({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            storageKey: file.storageKey || file.name // Use storageKey if available from presigned upload
-          })) : undefined,
+          location: formData.location || "",
+          budgetRange: formData.budget || "",
+            // timelineRange expects a single string e.g. "6-12months"
+          timelineRange: formData.timeline || "",
+          target_market_customers: formData.targetMarket || undefined,
+          key_competitors: formData.competitors || undefined,
+          unique_value_proposition: formData.uniqueValue || undefined,
+          revenue_model: formData.businessModel || undefined,
+          additional_context: formData.voiceInput || undefined,
         }
 
         console.log('Sending idea to backend:', requestBody)
 
-        const response = await fetch('http://localhost:8080/api/v1/ideas', {
+        const response = await fetch('http://localhost:8000/ideas/analyze', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -98,15 +95,11 @@ export function IdeaCreationWizard() {
           throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`)
         }
 
-        const result = await response.json()
-        console.log('Idea created successfully:', result)
-        
-        // Redirect to the created idea or ideas list
-        if (result.id) {
-          router.push(`/dashboard/ideas/${result.id}`)
-        } else {
-          router.push("/dashboard/ideas")
-        }
+  const apiResult = await response.json()
+  console.log('Idea analyzed successfully:', apiResult)
+  const stored = transformApiResponseToStoredIdea(apiResult, { title: formData.title, description: formData.description, category: formData.category })
+  saveIdea(stored)
+  router.push(`/dashboard/ideas/${stored.id}`)
       } catch (error) {
         console.error('Error creating idea:', error)
       } finally {

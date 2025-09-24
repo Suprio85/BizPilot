@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app.models import user  # Import to register models
 from app.routers.auth import router as auth_router, user_router
+from app.routers.ideas import router as ideas_router
 
 # Create database tables
 user.Base.metadata.create_all(bind=engine)
@@ -25,10 +26,12 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)
 app.include_router(user_router)
+app.include_router(ideas_router)
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Business Model API"}
+
 
 @app.get("/health")
 def health_check():

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { formatMarketSize, getIdea, StoredIdea } from "@/lib/ideas-store"
 import {
   AlertTriangle,
   ArrowLeft,
@@ -22,73 +23,26 @@ import {
   Users,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 interface IdeaDetailViewProps {
   ideaId: string
 }
 
-// Mock data - in real app this would come from API
-const mockIdea = {
-  id: "1",
-  title: "Eco-Friendly Packaging Solutions",
-  description:
-    "Biodegradable packaging for e-commerce businesses in Dhaka, focusing on sustainable materials and cost-effective solutions for local retailers.",
-  category: "sustainability",
-  status: "completed",
-  progress: 100,
-  successScore: 87,
-  createdAt: "2024-01-15",
-  lastUpdated: "2 hours ago",
-  basicInfo: {
-    location: "Dhaka, Bangladesh",
-    budget: "$5,000 - $10,000",
-    timeline: "6-12 months",
-    businessModel: "B2B Subscription",
-  },
-  marketAnalysis: {
-    marketSize: "$2.4M",
-    growthRate: "15% annually",
-    targetCustomers: "E-commerce businesses, local retailers, food delivery services",
-    competitorCount: 8,
-    marketOpportunity: "High",
-  },
-  businessModels: [
-    {
-      id: 1,
-      name: "Subscription Model",
-      description: "Monthly subscription for packaging supplies",
-      revenue: "$50K/month projected",
-      profitMargin: "35%",
-      timeToBreakeven: "8 months",
-      riskLevel: "Medium",
-    },
-    {
-      id: 2,
-      name: "Direct Sales Model",
-      description: "One-time sales with bulk discounts",
-      revenue: "$30K/month projected",
-      profitMargin: "28%",
-      timeToBreakeven: "12 months",
-      riskLevel: "Low",
-    },
-  ],
-  risks: [
-    { type: "Market", description: "Competition from established players", severity: "Medium" },
-    { type: "Supply Chain", description: "Raw material price volatility", severity: "High" },
-    { type: "Regulatory", description: "Environmental compliance requirements", severity: "Low" },
-  ],
-  opportunities: [
-    { type: "Market", description: "Growing environmental awareness", impact: "High" },
-    { type: "Technology", description: "New biodegradable materials", impact: "Medium" },
-    { type: "Partnership", description: "Government sustainability initiatives", impact: "High" },
-  ],
-}
-
 export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
   const [activeTab, setActiveTab] = useState("overview")
-  const idea = mockIdea // In real app, fetch by ideaId
+  const [idea, setIdea] = useState<StoredIdea | null>(null)
+  const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    const stored = getIdea(ideaId)
+    if (!stored) {
+      setNotFound(true)
+    } else {
+      setIdea(stored)
+    }
+  }, [ideaId])
 
   const getSuccessScoreColor = (score: number) => {
     if (score >= 85) return "text-green-600"
@@ -110,6 +64,23 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
     }
   }
 
+  if (notFound) {
+    return (
+      <div className="space-y-6">
+        <Link href="/dashboard/ideas">
+          <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-2" />Back to Ideas</Button>
+        </Link>
+        <Card className="border-border"><CardContent className="p-8 text-center"><h2 className="text-xl font-semibold mb-2">Idea not found</h2><p className="text-muted-foreground mb-4">It may have been cleared or not generated this session.</p><Link href="/dashboard/ideas/new"><Button>Create new idea</Button></Link></CardContent></Card>
+      </div>
+    )
+  }
+
+  if (!idea) return <div className="p-8 text-muted-foreground">Loading...</div>
+
+  const marketSizeDisplay = formatMarketSize(idea.marketAnalysis.marketSizeUSD)
+  const growthRateDisplay = `${idea.marketAnalysis.growthRatePct}% annually`
+  const progress = 100
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -123,9 +94,7 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-foreground">{idea.title}</h1>
-            <p className="text-muted-foreground mt-1">
-              Created on {idea.createdAt} • Last updated {idea.lastUpdated}
-            </p>
+            <p className="text-muted-foreground mt-1">Created {new Date(idea.createdAt).toLocaleDateString()} • Updated {new Date(idea.lastUpdated).toLocaleTimeString()}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -154,16 +123,14 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="border-border">
           <CardContent className="p-6 text-center">
-            <div className={`text-3xl font-bold ${getSuccessScoreColor(idea.successScore)} mb-2`}>
-              {idea.successScore}%
-            </div>
+            <div className={`text-3xl font-bold ${getSuccessScoreColor(idea.successScore)} mb-2`}>{idea.successScore}%</div>
             <p className="text-sm text-muted-foreground">Success Score</p>
           </CardContent>
         </Card>
 
         <Card className="border-border">
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-foreground mb-2">{idea.marketAnalysis.marketSize}</div>
+            <div className="text-3xl font-bold text-foreground mb-2">{marketSizeDisplay}</div>
             <p className="text-sm text-muted-foreground">Market Size</p>
           </CardContent>
         </Card>
@@ -177,9 +144,7 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
 
         <Card className="border-border">
           <CardContent className="p-6 text-center">
-            <Badge variant={idea.status === "completed" ? "default" : "secondary"} className="mb-2">
-              {idea.status}
-            </Badge>
+            <Badge variant={idea.status === 'completed' ? 'default' : 'secondary'} className="mb-2">{idea.status}</Badge>
             <p className="text-sm text-muted-foreground">Analysis Status</p>
           </CardContent>
         </Card>
@@ -215,46 +180,20 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
                     <div>
                       <h4 className="font-medium text-foreground mb-3">Basic Information</h4>
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Location:</span>
-                          <span className="text-foreground">{idea.basicInfo.location}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Budget:</span>
-                          <span className="text-foreground">{idea.basicInfo.budget}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Timeline:</span>
-                          <span className="text-foreground">{idea.basicInfo.timeline}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Model:</span>
-                          <span className="text-foreground">{idea.basicInfo.businessModel}</span>
-                        </div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Opportunity:</span><span className="text-foreground">{idea.marketAnalysis.marketOpportunity}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Competitors:</span><span className="text-foreground">{idea.marketAnalysis.competitorCount}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Growth:</span><span className="text-foreground">{growthRateDisplay}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Target:</span><span className="text-foreground max-w-[160px] text-right">{idea.marketAnalysis.targetCustomers}</span></div>
                       </div>
                     </div>
 
                     <div>
                       <h4 className="font-medium text-foreground mb-3">Market Overview</h4>
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Market Size:</span>
-                          <span className="text-foreground">{idea.marketAnalysis.marketSize}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Growth Rate:</span>
-                          <span className="text-foreground">{idea.marketAnalysis.growthRate}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Competitors:</span>
-                          <span className="text-foreground">{idea.marketAnalysis.competitorCount}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Opportunity:</span>
-                          <Badge variant="outline" className="text-xs">
-                            {idea.marketAnalysis.marketOpportunity}
-                          </Badge>
-                        </div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Size:</span><span>{marketSizeDisplay}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Growth:</span><span>{growthRateDisplay}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Competitors:</span><span>{idea.marketAnalysis.competitorCount}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">Opportunity:</span><span>{idea.marketAnalysis.marketOpportunity}</span></div>
                       </div>
                     </div>
                   </div>
@@ -271,9 +210,9 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Overall Progress</span>
-                      <span className="text-foreground">{idea.progress}%</span>
+                      <span className="text-foreground">{progress}%</span>
                     </div>
-                    <Progress value={idea.progress} className="h-2" />
+                    <Progress value={progress} className="h-2" />
                   </div>
 
                   <div className="space-y-3 text-sm">
@@ -325,8 +264,8 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={idea.businessModels.map((m) => ({
                   name: m.name,
-                  revenue: Number((m.revenue.match(/\d+/) || [0])[0]),
-                  margin: Number((m.profitMargin.match(/\d+/) || [0])[0]),
+                  revenue: m.revenueK,
+                  margin: m.marginPct,
                 }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
@@ -365,7 +304,7 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-primary mb-1">{model.revenue}</div>
+                      <div className="text-2xl font-bold text-primary mb-1">{model.revenueDisplay}</div>
                       <div className="text-xs text-muted-foreground">Projected Revenue</div>
                     </div>
                     <div className="text-center">
@@ -389,7 +328,7 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
                             pathname: `/dashboard/ideas/${idea.id}/models`,
                             query: {
                               tab: "assistant",
-                              seed: `Focus on the ${model.name} for ${idea.title}. Current metrics: revenue ${model.revenue}, margin ${model.profitMargin}, break-even ${model.timeToBreakeven}. Suggest improvements and risks to watch.`,
+                              seed: `Focus on the ${model.name} for ${idea.title}. Current metrics: revenue ${model.revenueDisplay}, margin ${model.profitMargin}, break-even ${model.timeToBreakeven}. Suggest improvements and risks to watch.`,
                             },
                           }}
                         >
@@ -428,12 +367,12 @@ export function IdeaDetailView({ ideaId }: IdeaDetailViewProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <DollarSign className="w-8 h-8 text-primary mx-auto mb-2" />
-                  <div className="text-xl font-bold text-foreground">{idea.marketAnalysis.marketSize}</div>
+                  <div className="text-xl font-bold text-foreground">{marketSizeDisplay}</div>
                   <div className="text-sm text-muted-foreground">Total Market Size</div>
                 </div>
                 <div className="text-center">
                   <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-foreground">{idea.marketAnalysis.growthRate}</div>
+                  <div className="text-xl font-bold text-foreground">{growthRateDisplay}</div>
                   <div className="text-sm text-muted-foreground">Annual Growth</div>
                 </div>
                 <div className="text-center">

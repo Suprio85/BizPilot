@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { BarChart3, Bot, Crown, Lightbulb, Mic, Send, TrendingUp, User } from "lucide-react"
+import { BarChart3, Bot, Crown, Image as ImageIcon, Lightbulb, Mic, Send, TrendingUp, User, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 interface Message {
@@ -14,6 +14,7 @@ interface Message {
   sender: "user" | "ai"
   timestamp: Date
   suggestions?: string[]
+  images?: { id: string; url: string; fileName: string }[]
 }
 
 const initialMessages: Message[] = [
@@ -49,6 +50,7 @@ export function AIChat({ seedPrompt, title }: AIChatProps = {}) {
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [messageCount, setMessageCount] = useState(1)
+  const [pendingImages, setPendingImages] = useState<{ id: string; url: string; file: File; fileName: string }[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const seededRef = useRef(false)
 
@@ -71,17 +73,19 @@ export function AIChat({ seedPrompt, title }: AIChatProps = {}) {
   }, [seedPrompt])
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return
+    if (!content.trim() && pendingImages.length === 0) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
       content: content.trim(),
       sender: "user",
       timestamp: new Date(),
+      images: pendingImages.map(img => ({ id: img.id, url: img.url, fileName: img.fileName }))
     }
 
     setMessages((prev) => [...prev, userMessage])
-    setInputValue("")
+  setInputValue("")
+  setPendingImages([])
     setIsLoading(true)
     setMessageCount((prev) => prev + 1)
 
@@ -126,6 +130,23 @@ export function AIChat({ seedPrompt, title }: AIChatProps = {}) {
 
   const handleSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion)
+  }
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+    const next: { id: string; url: string; file: File; fileName: string }[] = []
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue
+      next.push({ id: crypto.randomUUID(), url: URL.createObjectURL(file), file, fileName: file.name })
+    }
+    setPendingImages(prev => [...prev, ...next])
+    // Reset input so same file can be picked again
+    e.target.value = ''
+  }
+
+  const removePendingImage = (id: string) => {
+    setPendingImages(prev => prev.filter(p => p.id !== id))
   }
 
   return (
@@ -228,6 +249,18 @@ export function AIChat({ seedPrompt, title }: AIChatProps = {}) {
                       }`}
                     >
                       <p className="text-sm">{message.content}</p>
+                      {message.images && message.images.length > 0 && (
+                        <div className="mt-2 grid grid-cols-3 gap-2">
+                          {message.images.map(img => (
+                            <div key={img.id} className="relative group border rounded overflow-hidden">
+                              <img src={img.url} alt={img.fileName} className="w-full h-20 object-cover" />
+                              <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-[10px] text-white px-1 truncate">
+                                {img.fileName}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {message.suggestions && (
@@ -282,6 +315,29 @@ export function AIChat({ seedPrompt, title }: AIChatProps = {}) {
               <div ref={messagesEndRef} />
             </CardContent>
 
+            {/* Pending image previews (before send) */}
+            {pendingImages.length > 0 && (
+              <div className="border-t border-border px-4 pt-4">
+                <div className="grid grid-cols-5 gap-3">
+                  {pendingImages.map(img => (
+                    <div key={img.id} className="relative group">
+                      <img src={img.url} alt={img.fileName} className="w-full h-24 object-cover rounded border" />
+                      <button
+                        onClick={() => removePendingImage(img.id)}
+                        className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                        aria-label="Remove image"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-[10px] text-white px-1 truncate rounded-b">
+                        {img.fileName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Input */}
             <div className="border-t border-border p-4">
               <div className="flex gap-2">
@@ -293,13 +349,25 @@ export function AIChat({ seedPrompt, title }: AIChatProps = {}) {
                     onKeyPress={(e) => e.key === "Enter" && handleSendMessage(inputValue)}
                     className="pr-10"
                   />
-                  <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0">
-                    <Mic className="w-4 h-4" />
-                  </Button>
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+                    <label className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-muted cursor-pointer border border-transparent hover:border-border transition">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageSelect}
+                        className="hidden"
+                      />
+                      <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                    </label>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Mic className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 <Button
                   onClick={() => handleSendMessage(inputValue)}
-                  disabled={!inputValue.trim() || isLoading}
+                  disabled={(!inputValue.trim() && pendingImages.length === 0) || isLoading}
                   className="glow-primary"
                 >
                   <Send className="w-4 h-4" />

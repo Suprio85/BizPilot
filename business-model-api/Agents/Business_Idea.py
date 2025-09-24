@@ -1,4 +1,3 @@
-
 import os
 from datetime import datetime, timezone, timedelta
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -6,6 +5,7 @@ from langchain.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
 from langchain_community.utilities import GoogleSerperAPIWrapper
 import json
+import re
 
 os.environ["GOOGLE_API_KEY"] = "AIzaSyC7f0qA_jsnvhW6ZWmkgYvhOLWssn5aGic"
 os.environ["SERPER_API_KEY"] = "5ebb46d21c1cc9e9f5a64722bb038ff1e5e6a101"
@@ -51,7 +51,7 @@ prompt_template = PromptTemplate(
 
     Recent Trends and News from Bangladesh (2024-2025): {recent_trends}
 
-    Output a JSON object with the EXACT structure below. Do not include extra fields or deviate from this format:
+    Output a JSON object with the EXACT structure below. Do not include extra fields or deviate from this format. Also ensure the JSON is valid and properly formatted. Enclose the entire JSON in triple backticks (```) and no new lines before or after the backticks.Make sure to add atleast 3 business models, 2 risks and 2 opportunities.:
     json
     {{
       "successScore": number,
@@ -125,10 +125,7 @@ def process_business_idea(idea):
         analysis_result = analysis_chain.invoke(input_data)
         analysis_content = analysis_result.content
         
-        if "json" in analysis_content:
-            json_start = analysis_content.find("json") + 7
-            json_end = analysis_content.find("", json_start)
-            analysis_content = analysis_content[json_start:json_end].strip()
+        response = re.sub(r"```(?:json)?", "", analysis_content).strip()
         
         try:
             analysis_data = json.loads(analysis_content)
@@ -225,8 +222,8 @@ def process_business_idea(idea):
 
 def main():
     business_idea = {
-        "title": "Handmade Jewelry",
-        "description": "Online handmade jewelry shop",
+        "title": "fozen fish in dhaka",
+        "description": "Online frozen fish  shop",
         "category": "Sustainability",
         "location": "Dhaka, Bangladesh",
         "budgetRange": "5000-10000",
@@ -237,7 +234,7 @@ def main():
     response = process_business_idea(business_idea)
     
     if response:
-        print("Generated Business Idea Analysis:")
+        print("Generated Business Idea` Analysis:")
         print(json.dumps(response, indent=2))
 
 if __name__ == "__main__":
