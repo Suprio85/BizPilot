@@ -2,7 +2,7 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas.user import UserCreate, UserResponse, Token, LoginRequest, UserUpdate
+from app.schemas.user import UserCreate, UserResponse, Token, LoginRequest, UserUpdate, AuthResponse
 from app.crud.user import create_user, get_user_by_email, authenticate_user, update_user, delete_user
 from app.auth.jwt import create_access_token, get_current_user
 from app.config import settings
@@ -11,7 +11,7 @@ from app.models.user import User
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
-@router.post("/signup", response_model=UserResponse)
+@router.post("/signup", response_model=AuthResponse, status_code=201)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     db_user = get_user_by_email(db, email=user.email)
     if db_user:
@@ -20,9 +20,18 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     
-    return create_user(db=db, user=user)
+    created_user = create_user(db=db, user=user)
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": created_user.email}, expires_delta=access_token_expires
+    )
+    
+    return AuthResponse(
+        token=access_token,
+        user=created_user
+    )
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=AuthResponse)
 def login(user_credentials: LoginRequest, db: Session = Depends(get_db)):
     user = authenticate_user(db, user_credentials.email, user_credentials.password)
     if not user:
@@ -35,13 +44,17 @@ def login(user_credentials: LoginRequest, db: Session = Depends(get_db)):
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    return AuthResponse(
+        token=access_token,
+        user=user
+    )
 
 @router.post("/logout")
 def logout():
     # Since we're using stateless JWT, we just return a success message
     # In production, you might want to implement a token blacklist
-    return {"message": "Successfully logged out"}
+    return {"message": "Logged out successfully"}
 
 @user_router.get("/me", response_model=UserResponse)
 def get_current_user_profile(current_user: User = Depends(get_current_user)):

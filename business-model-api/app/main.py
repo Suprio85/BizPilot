@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
-from app.models import user  # Import to register models
+from app.models import user, idea  # Import to register models
 from app.routers.auth import router as auth_router, user_router
 from app.routers.ideas import router as ideas_router
 
 # Create database tables
 user.Base.metadata.create_all(bind=engine)
+idea.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Business Model API",

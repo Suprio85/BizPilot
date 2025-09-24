@@ -1,0 +1,725 @@
+{
+	"info": {
+		"_postman_id": "bizpilot-api-tests",
+		"name": "BizPilot API Tests",
+		"description": "Complete API testing collection for BizPilot backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "idea_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "model_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "risk_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "opportunity_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Signup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (responseCode.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"access_token\", jsonData.token);",
+									"    pm.environment.set(\"user_id\", jsonData.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"securepassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/signup",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"signup"
+							]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (responseCode.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"access_token\", jsonData.token);",
+									"    pm.environment.set(\"user_id\", jsonData.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"securepassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Ideas",
+			"item": [
+				{
+					"name": "Create Idea",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (responseCode.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"idea_id\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"AI-Powered Personal Fitness Coach\",\n    \"description\": \"A mobile app that uses AI to create personalized workout plans and nutrition advice based on user's goals, fitness level, and preferences.\",\n    \"category\": \"Health & Fitness\",\n    \"location\": \"San Francisco, CA\",\n    \"budget_range\": \"10000-25000\",\n    \"timeline_range\": \"6-12months\",\n    \"target_market\": \"Fitness enthusiasts aged 25-45 who want personalized guidance\",\n    \"competitors\": \"MyFitnessPal, Nike Training Club, Fitbit Premium\",\n    \"unique_value\": \"AI-driven personalization with real-time adaptations based on progress and feedback\",\n    \"business_model_pref\": \"Subscription-based with freemium tier\",\n    \"voice_notes\": \"Focus on busy professionals who need efficient workouts\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas"
+							]
+						}
+					}
+				},
+				{
+					"name": "List Ideas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas?page=1&pageSize=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								},
+								{
+									"key": "search",
+									"value": "fitness",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "draft",
+									"disabled": true
+								},
+								{
+									"key": "category",
+									"value": "Health & Fitness",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Idea Detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Idea",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"analyzing\",\n    \"progress\": 25,\n    \"success_score\": 75\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Idea",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Market Analysis",
+			"item": [
+				{
+					"name": "Get Market Analysis",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/market",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"market"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Market Analysis",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"market_size_usd\": 2400000000,\n    \"growth_rate_pct\": 15.5,\n    \"target_customers\": \"Health-conscious individuals aged 25-45 with disposable income\",\n    \"competitor_count\": 25,\n    \"market_opportunity\": \"High\",\n    \"notes\": \"Growing market with increasing focus on personalized health solutions\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/market",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"market"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Business Models",
+			"item": [
+				{
+					"name": "List Business Models",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/models",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"models"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Business Model",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (responseCode.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"model_id\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Freemium Subscription Model\",\n    \"description\": \"Free basic features with premium subscription for advanced AI coaching and analytics\",\n    \"revenue_monthly_k\": 45.5,\n    \"margin_pct\": 75.2,\n    \"time_to_breakeven_months\": 18,\n    \"risk_level\": \"Medium\",\n    \"churn_pct\": 8.5,\n    \"assumptions\": \"Customer acquisition cost of $25, monthly premium subscription of $9.99\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/models",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"models"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Business Model Detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/models/{{model_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"models",
+								"{{model_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Business Model",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"revenue_monthly_k\": 52.3,\n    \"margin_pct\": 78.1,\n    \"churn_pct\": 7.2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/models/{{model_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"models",
+								"{{model_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Business Model",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/models/{{model_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"models",
+								"{{model_id}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Risks",
+			"item": [
+				{
+					"name": "List Risks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/risks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"risks"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Risk",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (responseCode.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"risk_id\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"Market\",\n    \"description\": \"High competition from established fitness apps with large user bases and marketing budgets\",\n    \"severity\": \"High\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/risks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"risks"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Risk",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"severity\": \"Medium\",\n    \"description\": \"Moderate competition from established fitness apps, but AI personalization provides differentiation\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/risks/{{risk_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"risks",
+								"{{risk_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Risk",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/risks/{{risk_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"risks",
+								"{{risk_id}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Opportunities",
+			"item": [
+				{
+					"name": "List Opportunities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/opportunities",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"opportunities"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Opportunity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (responseCode.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"opportunity_id\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"Technology\",\n    \"description\": \"Integration with wearable devices and IoT fitness equipment for comprehensive health monitoring\",\n    \"impact\": \"High\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/opportunities",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"opportunities"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Opportunity",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"impact\": \"Medium\",\n    \"description\": \"Integration with popular wearable devices for enhanced user experience and data collection\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/opportunities/{{opportunity_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"opportunities",
+								"{{opportunity_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Opportunity",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ideas/{{idea_id}}/opportunities/{{opportunity_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ideas",
+								"{{idea_id}}",
+								"opportunities",
+								"{{opportunity_id}}"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}
