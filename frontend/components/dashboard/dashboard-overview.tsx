@@ -1,21 +1,22 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { useAuth } from "@/contexts/auth-context"
 import {
-  Lightbulb,
-  TrendingUp,
-  MessageSquare,
-  Clock,
   ArrowRight,
   BarChart3,
-  Users,
+  Clock,
+  Lightbulb,
+  MessageSquare,
   Target,
-  Sparkles,
+  TrendingUp,
+  Users
 } from "lucide-react"
 import Link from "next/link"
+import { useMemo } from "react"
 
 const recentIdeas = [
   {
@@ -55,12 +56,30 @@ const stats = [
 ]
 
 export function DashboardOverview() {
+  const { user, isLoading } = useAuth()
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour < 5) return 'Good night'
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+  }, [])
+
+  const displayName = user?.name || user?.email?.split('@')[0] || 'there'
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Welcome back, John!</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            {isLoading ? (
+              <span className="inline-block h-8 w-56 bg-muted animate-pulse rounded" />
+            ) : (
+              <>{greeting}, {displayName}! <span className="text-primary">👋</span></>
+            )}
+          </h1>
           <p className="text-muted-foreground mt-1">Here's what's happening with your business ideas today.</p>
         </div>
       </div>

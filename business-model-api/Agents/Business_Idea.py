@@ -1,25 +1,37 @@
+
 import os
 from datetime import datetime, timezone, timedelta
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
+from langchain_community.utilities import GoogleSerperAPIWrapper
 import json
 
-# Set Google API key for Gemini
-os.environ["GOOGLE_API_KEY"] = "AIzaSyC7f0qA_jsnvhW6ZWmkgYvhOLWssn5aGic"  # Replace with your actual API key
+os.environ["GOOGLE_API_KEY"] = "AIzaSyC7f0qA_jsnvhW6ZWmkgYvhOLWssn5aGic"
+os.environ["SERPER_API_KEY"] = "5ebb46d21c1cc9e9f5a64722bb038ff1e5e6a101"
 
-# Initialize Gemini model
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.7)
 
-# Prompt template for generating business insights
+search_query_template = PromptTemplate(
+    input_variables=["idea_summary"],
+    template="""Based on this business idea summary, generate a concise and effective Google search query to find recent trends, news, and market insights about the product/service in Bangladesh for 2024-2025. Focus on market growth, consumer trends, competitors, and opportunities.
+
+Idea Summary: {idea_summary}
+
+Output only the search query string, nothing else."""
+)
+
+search_query_chain = RunnableSequence(search_query_template | llm)
+
 prompt_template = PromptTemplate(
     input_variables=[
         "title", "description", "category", "target_location", "initial_budget",
         "launch_timeline", "target_market_customers", "unique_value_proposition",
         "revenue_model", "additional_context", "market_size_opportunity",
-        "key_competitors", "competitive_advantage", "market_entry_strategy"
+        "key_competitors", "competitive_advantage", "market_entry_strategy",
+        "recent_trends"
     ],
-    template="""You are a business analyst. Based on the following business idea, generate a detailed analysis including market size, growth rate, competitor count, market opportunity (as opportunity of success), business models, and generic risks and opportunities for the overall idea. Provide concise, realistic, and actionable insights.
+    template="""You are a business analyst. Based on the following business idea and recent trends/news, generate a detailed analysis including market size, growth rate, competitor count, market opportunity (as opportunity of success), business models, and generic risks and opportunities for the overall idea. Incorporate insights from the recent trends to make the analysis more current and realistic—adjust numbers, risks, and opportunities based on real-world data where possible. Provide concise, realistic, and actionable insights.
 
     Business Idea:
     - Title: {title}
@@ -37,8 +49,10 @@ prompt_template = PromptTemplate(
     - Competitive Advantage: {competitive_advantage}
     - Market Entry Strategy: {market_entry_strategy}
 
+    Recent Trends and News from Bangladesh (2024-2025): {recent_trends}
+
     Output a JSON object with the EXACT structure below. Do not include extra fields or deviate from this format:
-    ```json
+    json
     {{
       "successScore": number,
       "marketAnalysis": {{
@@ -73,20 +87,23 @@ prompt_template = PromptTemplate(
         }}
       ]
     }}
-    ```
-    Ensure all fields are populated with realistic values based on the input. For numbers, provide integers or decimals as appropriate. For strings, provide meaningful text. For lists, include at least one item per list. The 'marketOpportunity' field represents the overall opportunity of success. The category can be any open string value. Generate generic risks and opportunities for the overall business idea, not specific to individual business models.
-    """
+
+Ensure all fields are populated with realistic values based on the input and recent trends. For numbers, provide integers or decimals as appropriate. For strings, provide meaningful text. For lists, include at least one item per list. The 'marketOpportunity' field represents the overall opportunity of success. The category can be any open string value. Generate generic risks and opportunities for the overall business idea, not specific to individual business models."""
 )
 
-# Create RunnableSequence
 analysis_chain = RunnableSequence(prompt_template | llm)
 
 def process_business_idea(idea):
     try:
-        # Use Bangladesh time (UTC+6)
         current_time = datetime.now(timezone(timedelta(hours=6))).isoformat()
-
-        # Prepare input for LLM, with optional fields handled
+        
+        idea_summary = f"Title: {idea['title']}. Description: {idea['description']}. Category: {idea['category']}. Location: {idea['location']}."
+        search_query_result = search_query_chain.invoke({"idea_summary": idea_summary})
+        search_query = search_query_result.content.strip()
+        
+        search_tool = GoogleSerperAPIWrapper()
+        recent_trends = search_tool.run(search_query)
+        
         input_data = {
             "title": idea["title"],
             "description": idea["description"],
@@ -101,21 +118,18 @@ def process_business_idea(idea):
             "market_size_opportunity": idea.get("market_size_opportunity", "Not provided"),
             "key_competitors": idea.get("key_competitors", "Not provided"),
             "competitive_advantage": idea.get("competitive_advantage", "Not provided"),
-            "market_entry_strategy": idea.get("market_entry_strategy", "Not provided")
+            "market_entry_strategy": idea.get("market_entry_strategy", "Not provided"),
+            "recent_trends": recent_trends
         }
-
-        # Generate analysis using Gemini
+        
         analysis_result = analysis_chain.invoke(input_data)
-        # Extract content from AIMessage
         analysis_content = analysis_result.content
         
-        # Clean up the response to extract JSON
-        if "```json" in analysis_content:
-            json_start = analysis_content.find("```json") + 7
-            json_end = analysis_content.find("```", json_start)
+        if "json" in analysis_content:
+            json_start = analysis_content.find("json") + 7
+            json_end = analysis_content.find("", json_start)
             analysis_content = analysis_content[json_start:json_end].strip()
         
-        # Parse the JSON response
         try:
             analysis_data = json.loads(analysis_content)
         except json.JSONDecodeError as je:
@@ -167,8 +181,7 @@ def process_business_idea(idea):
                     }
                 ]
             }
-
-        # Construct response JSON with only required fields and optional fields if provided
+        
         response = {
             "title": idea["title"],
             "description": idea["description"],
@@ -192,8 +205,7 @@ def process_business_idea(idea):
             "risks": analysis_data["risks"],
             "opportunities": analysis_data["opportunities"]
         }
-
-        # Include optional fields only if provided in input
+        
         optional_fields = [
             "target_market_customers", "unique_value_proposition", "revenue_model",
             "additional_context", "market_size_opportunity", "key_competitors",
@@ -202,9 +214,9 @@ def process_business_idea(idea):
         for field in optional_fields:
             if field in idea and idea[field] != "Not provided":
                 response[field] = idea[field]
-
+        
         return response
-
+    
     except Exception as e:
         print(f"Error processing idea: {str(e)}")
         import traceback
@@ -212,7 +224,6 @@ def process_business_idea(idea):
         return None
 
 def main():
-    # Example business idea input
     business_idea = {
         "title": "Handmade Jewelry",
         "description": "Online handmade jewelry shop",
@@ -221,9 +232,10 @@ def main():
         "budgetRange": "5000-10000",
         "timelineRange": "6-12months"
     }
-
+    
     print("Processing business idea...")
     response = process_business_idea(business_idea)
+    
     if response:
         print("Generated Business Idea Analysis:")
         print(json.dumps(response, indent=2))

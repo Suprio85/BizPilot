@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
+// Central API base (FastAPI running on 8000)
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+
 export interface User {
   id?: string
   email: string
@@ -62,43 +65,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     setIsLoading(true)
-    
     try {
-      const response = await fetch('http://localhost:8080/api/v1/auth/login', {
+      // FastAPI login returns: { access_token, token_type }
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error?.message || `Login failed: ${response.status}`)
+        let message = `Login failed: ${response.status}`
+        console.log(message)
+        try {
+          const err = await response.json()
+          message = err.detail || err.error?.message || message
+        } catch { /* ignore */ }
+        throw new Error(message)
       }
 
-      const data = await response.json()
-      const { token: authToken, user: userData } = data
+      const { access_token } = await response.json()
+      if (!access_token) throw new Error('No access token returned')
 
-      // Store in state and localStorage
+      // Fetch user profile separately
+      const meRes = await fetch(`${API_BASE}/users/me`, {
+        headers: { Authorization: `Bearer ${access_token}` },
+      })
+      if (!meRes.ok) {
+        throw new Error('Failed to load user profile')
+      }
+      const profile = await meRes.json()
+
+      // Normalize profile to User shape
+      const userData: User = {
+        id: profile.id,
+        email: profile.email,
+        name: profile.name || profile.email.split('@')[0],
+        plan: (profile.plan as any) || 'free',
+      }
+
       setUser(userData)
-      setToken(authToken)
+      setToken(access_token)
       localStorage.setItem('bizpilot_user', JSON.stringify(userData))
-      localStorage.setItem('auth_token', authToken)
-
-    } catch (error) {
-      console.error('Login error:', error)
-      
-      // Fallback to mock data for development
-      const mockUser = { email, name: 'User', plan: 'free' as const }
-      const mockToken = 'demo-token'
-      
-      setUser(mockUser)
-      setToken(mockToken)
-      localStorage.setItem('bizpilot_user', JSON.stringify(mockUser))
-      localStorage.setItem('auth_token', mockToken)
-      
-      throw error
+      localStorage.setItem('auth_token', access_token)
     } finally {
       setIsLoading(false)
     }
@@ -106,50 +114,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = async (userData: SignupData) => {
     setIsLoading(true)
-    
     try {
-      const response = await fetch('http://localhost:8080/api/v1/auth/signup', {
+      const response = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...userData, role: 'user', auth_provider: 'email' }),
       })
-
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error?.message || `Signup failed: ${response.status}`)
+        let message = `Signup failed: ${response.status}`
+        try {
+          const err = await response.json()
+            message = err.detail || err.error?.message || message
+        } catch { /* ignore */ }
+        throw new Error(message)
       }
 
-      const data = await response.json()
-      const { token: authToken, user: newUser } = data
-
-      // Store in state and localStorage
-      setUser(newUser)
-      setToken(authToken)
-      localStorage.setItem('bizpilot_user', JSON.stringify(newUser))
-      localStorage.setItem('auth_token', authToken)
-
-    } catch (error) {
-      console.error('Signup error:', error)
-      
-      // Fallback to mock data for development
-      const mockUser = { 
-        email: userData.email, 
-        name: userData.name, 
-        plan: 'free' as const,
-        location: userData.location,
-        businessStage: userData.businessStage,
-        language: userData.language
-      }
-      const mockToken = 'demo-token'
-      
-      setUser(mockUser)
-      setToken(mockToken)
-      localStorage.setItem('bizpilot_user', JSON.stringify(mockUser))
-      localStorage.setItem('auth_token', mockToken)
-      
-      throw error
+      // Backend returns the created user (no token). Auto-login with same credentials.
+      await login(userData.email, userData.password)
     } finally {
       setIsLoading(false)
     }
