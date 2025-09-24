@@ -1,55 +1,45 @@
-# fastapi==0.104.1
-# uvicorn[standard]==0.24.0
-# python-multipart==0.0.6
-# python-jose[cryptography]==3.3.0
-# passlib[bcrypt]==1.7.4
-# bcrypt==4.0.1
-# python-decouple==3.8
-# sqlalchemy==2.0.23
-# psycopg2-binary==2.9.9
-# alembic==1.12.1
-
-# pydantic[email]==2.5.0
-
-# langchain==0.2.14
-# langchain-core==0.2.38
-# langchain-google-genai==1.0.10
-# langchain-text-splitters==0.2.4
-# langsmith==0.1.147
-# google-generativeai==0.7.2
-# serpapi==0.1.5
-# protobuf==4.25.3
-# grpcio==1.66.1
-
+# FastAPI and server
 fastapi>=0.104.1
 uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
+
+# Authentication
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 bcrypt>=4.0.1
+
+# Configuration
 python-decouple>=3.8
+
+# Database
 sqlalchemy>=2.0.23
 psycopg2-binary>=2.9.9
 alembic>=1.12.1
-pydantic>=2.5.0
-langchain>=0.2.16
-langchain-google-genai==1.0.7
-langchain-community
-pipdeptree>=2.28.0
-packaging>=24.1
-pip>=24.2
-setuptools>=75.1.0
-pydantic[email]==2.5.0
 
-# fastapi==0.104.1
-# uvicorn[standard]==0.24.0
-# python-multipart==0.0.6
-# python-jose[cryptography]==3.3.0
-# passlib[bcrypt]==1.7.4
-# bcrypt==4.0.1
-# python-decouple==3.8
-# sqlalchemy==2.0.23
-# psycopg2-binary==2.9.9
-# alembic==1.12.1
-# pydantic==2.5.0
-# pydantic[email]==2.5.0
+# Pydantic
+pydantic>=2.5.0
+pydantic[email]>=2.5.0
+
+# ML and Data Science
+torch>=2.8.0           # 2.8+ works with Python 3.12 on Windows
+numpy>=1.24.3
+pandas>=2.0.3
+scikit-learn>=1.3.0
+sentence-transformers>=2.2.2
+
+# Kaggle API
+kaggle>=1.5.16
+
+# LangChain
+langchain>=0.3.27
+langchain-google-genai>=1.0.7
+langchain-community>=0.3.29
+
+# Utilities
+requests>=2.31.0
+pathlib2>=2.3.7
+packaging>=25.0
+pipdeptree>=2.28.0
+setuptools>=80.9.0
+
+# python -m pip install --upgrade pip setuptools wheel
