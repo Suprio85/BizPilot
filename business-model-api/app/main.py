@@ -7,6 +7,7 @@ from app.routers.ideas import router as ideas_router
 from app.routers.daily_updates import router as daily_router
 from app.routers.chat_simple import router as simple_chat_router
 from app.routers.chat import router as chat_router
+from app.routers.chat_image_path import router as chat_image_router
 
 
 # Create database tables
@@ -34,6 +35,7 @@ app.include_router(ideas_router)
 app.include_router(daily_router)
 app.include_router(simple_chat_router)
 app.include_router(chat_router)
+app.include_router(chat_image_router)
 # app.include_router(chat_router)
 
 @app.get("/")
