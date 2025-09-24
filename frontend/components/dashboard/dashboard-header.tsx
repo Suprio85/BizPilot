@@ -1,15 +1,26 @@
 "use client"
 
+import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Menu, Search, Bell, Plus } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import { LogOut, Menu, Plus, Search, User } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface DashboardHeaderProps {
   onMenuClick: () => void
 }
 
 export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
+  const { user, logout } = useAuth()
+  const router = useRouter()
+
+  const handleLogout = () => {
+    logout()
+    router.push("/login")
+  }
+
   return (
     <header className="bg-background border-b border-border">
       <div className="flex items-center justify-between px-6 py-4">
@@ -31,6 +42,25 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
               New Idea
             </Button>
           </Link>
+
+          <div className="flex items-center gap-2 pl-2 border-l border-border">
+            <Avatar className="w-8 h-8">
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+              )}
+            </Avatar>
+            <div className="hidden md:block text-sm">
+              <div className="font-medium">{user?.name || "User"}</div>
+              <div className="text-xs text-muted-foreground capitalize">{user?.plan || "free"} plan</div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleLogout} title="Logout">
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </header>

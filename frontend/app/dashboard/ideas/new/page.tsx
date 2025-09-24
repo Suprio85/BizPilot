@@ -3,7 +3,6 @@ import { IdeaCreationWizard } from "@/components/ideas/idea-creation-wizard"
 
 export default function NewIdeaPage() {
   return (
-    <DashboardLayout>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Create New Business Idea</h1>
@@ -13,6 +12,5 @@ export default function NewIdeaPage() {
         </div>
         <IdeaCreationWizard />
       </div>
-    </DashboardLayout>
   )
 }

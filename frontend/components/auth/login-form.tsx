@@ -2,44 +2,55 @@
 
 import type React from "react"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import { Eye, EyeOff, Lock, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
+  const [error, setError] = useState("")
   const router = useRouter()
+  const { login, isLoading } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setError("")
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock successful login
-    localStorage.setItem("bizpilot_user", JSON.stringify({ email: formData.email, name: "User" }))
-    router.push("/dashboard")
+    try {
+      await login(formData.email, formData.password)
+      router.push("/dashboard")
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Login failed")
+    }
   }
 
-  const handleOAuthLogin = (provider: string) => {
+  const handleOAuthLogin = async (provider: string) => {
     console.log(`Login with ${provider}`)
-    // Mock OAuth login
-    localStorage.setItem("bizpilot_user", JSON.stringify({ email: "user@example.com", name: "User" }))
-    router.push("/dashboard")
+    try {
+      // Mock OAuth login - in production, this would redirect to OAuth provider
+      await login("user@example.com", "oauth-password")
+      router.push("/dashboard")
+    } catch (error) {
+      setError("OAuth login failed")
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+          {error}
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <div className="relative">

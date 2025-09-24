@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { DollarSign, MapPin, Mic, Upload } from "lucide-react"
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 
 interface IdeaBasicsStepProps {
   formData: any
@@ -20,61 +20,108 @@ export function IdeaBasicsStep({ formData, setFormData }: IdeaBasicsStepProps) {
 
   const handleVoiceInput = () => {
     try {
+      // Check if running in browser environment
+      if (typeof window === 'undefined') {
+        console.warn("SpeechRecognition not available in server environment")
+        return
+      }
+
       const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
       if (!SR) {
         console.warn("SpeechRecognition API not supported in this browser")
-        // Minimal UX fallback
         alert("Voice input isn't supported in this browser. Try Chrome or Edge on desktop/mobile.")
         return
       }
 
-      if (!recognitionRef.current) {
-        const recognition = new SR()
-        recognition.lang = "en-US"
-        recognition.interimResults = false
-        recognition.maxAlternatives = 1
-
-        recognition.onstart = () => setIsListening(true)
-        recognition.onend = () => setIsListening(false)
-        recognition.onerror = (event: any) => {
-          console.error("Speech recognition error:", event?.error)
+      // If already listening, stop the recognition
+      if (isListening && recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+        } catch (e) {
+          console.warn("Failed to stop recognition", e)
           setIsListening(false)
         }
-        recognition.onresult = (event: any) => {
+        return
+      }
+
+      // Create new recognition instance each time to avoid state issues
+      const recognition = new SR()
+      recognition.lang = "en-US"
+      recognition.continuous = false
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+
+      recognition.onstart = () => {
+        console.log("Speech recognition started")
+        setIsListening(true)
+      }
+
+      recognition.onend = () => {
+        console.log("Speech recognition ended")
+        setIsListening(false)
+        recognitionRef.current = null // Clear reference
+      }
+
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error)
+        setIsListening(false)
+        recognitionRef.current = null
+        
+        // Provide user-friendly error messages
+        switch (event.error) {
+          case 'no-speech':
+            alert("No speech was detected. Please try again.")
+            break
+          case 'audio-capture':
+            alert("No microphone was found. Please check your microphone settings.")
+            break
+          case 'not-allowed':
+            alert("Microphone access was denied. Please allow microphone access and try again.")
+            break
+          case 'network':
+            alert("Network error occurred during speech recognition.")
+            break
+          default:
+            alert(`Speech recognition error: ${event.error}`)
+        }
+      }
+
+      recognition.onresult = (event: any) => {
+        try {
           const transcript: string = Array.from(event.results)
-            .map((r: any) => r[0]?.transcript || "")
+            .map((result: any) => result[0]?.transcript || "")
             .join(" ")
             .trim()
+
+          console.log("Speech recognition transcript:", transcript)
 
           if (transcript) {
             const newDescription = (formData.description || "").trim()
               ? `${formData.description}\n${transcript}`
               : transcript
+            
+            const newVoiceInput = formData.voiceInput 
+              ? `${formData.voiceInput}\n${transcript}` 
+              : transcript
+
             setFormData({
               ...formData,
               description: newDescription,
-              voiceInput: ((formData.voiceInput || "") + (formData.voiceInput ? "\n" : "") + transcript).trim(),
+              voiceInput: newVoiceInput,
             })
           }
+        } catch (error) {
+          console.error("Error processing speech recognition result:", error)
         }
-
-        recognitionRef.current = recognition
       }
 
-      // Toggle start/stop if already listening
-      if (isListening) {
-        try {
-          recognitionRef.current.stop()
-        } catch (e) {
-          console.warn("Failed to stop recognition", e)
-        }
-        return
-      }
-
-      recognitionRef.current.start()
-    } catch (e) {
-      console.error(e)
-      alert("Could not start voice input.")
+      recognitionRef.current = recognition
+      recognition.start()
+      
+    } catch (error) {
+      console.error("Speech recognition error:", error)
+      setIsListening(false)
+      alert("Could not start voice input. Please check your microphone permissions.")
     }
   }
 

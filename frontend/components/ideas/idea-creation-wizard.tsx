@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { IdeaBasicsStep } from "./steps/idea-basics-step"
 import { IdeaDetailsStep } from "./steps/idea-details-step"
 import { MarketAnalysisStep } from "./steps/market-analysis-step"
@@ -36,6 +37,8 @@ const steps = [
 
 export function IdeaCreationWizard() {
   const [currentStep, setCurrentStep] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { token } = useAuth()
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -52,12 +55,63 @@ export function IdeaCreationWizard() {
   })
   const router = useRouter()
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
     } else {
-      // Generate business models and redirect
-      router.push("/dashboard/ideas/1")
+      // Generate business models - submit to backend
+      setIsSubmitting(true)
+      try {
+        const requestBody = {
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          location: formData.location || undefined,
+          budgetRange: formData.budget || undefined,
+          timelineRange: formData.timeline || undefined,
+          targetMarket: formData.targetMarket || undefined,
+          competitors: formData.competitors || undefined,
+          uniqueValue: formData.uniqueValue || undefined,
+          businessModelPref: formData.businessModel || undefined,
+          voiceNotes: formData.voiceInput || undefined,
+          attachments: formData.uploadedFiles.length > 0 ? formData.uploadedFiles.map((file: any) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            storageKey: file.storageKey || file.name // Use storageKey if available from presigned upload
+          })) : undefined,
+        }
+
+        console.log('Sending idea to backend:', requestBody)
+
+        const response = await fetch('http://localhost:8080/api/v1/ideas', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token || 'demo-token'}`,
+          },
+          body: JSON.stringify(requestBody),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`)
+        }
+
+        const result = await response.json()
+        console.log('Idea created successfully:', result)
+        
+        // Redirect to the created idea or ideas list
+        if (result.id) {
+          router.push(`/dashboard/ideas/${result.id}`)
+        } else {
+          router.push("/dashboard/ideas")
+        }
+      } catch (error) {
+        console.error('Error creating idea:', error)
+      } finally {
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -97,13 +151,14 @@ export function IdeaCreationWizard() {
 
           {/* Navigation */}
           <div className="flex justify-between pt-6 border-t border-border">
-            <Button variant="outline" onClick={prevStep} disabled={currentStep === 0}>
+            <Button variant="outline" onClick={prevStep} disabled={currentStep === 0 || isSubmitting}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Previous
             </Button>
-            <Button onClick={nextStep} className="glow-primary">
-              {currentStep === steps.length - 1 ? "Generate Models" : "Continue"}
-              <ArrowRight className="w-4 h-4 ml-2" />
+            <Button onClick={nextStep} className="glow-primary" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : (currentStep === steps.length - 1 ? "Generate Models" : "Continue")}
+              {!isSubmitting && <ArrowRight className="w-4 h-4 ml-2" />}
+              {isSubmitting && <Sparkles className="w-4 h-4 ml-2 animate-spin" />}
             </Button>
           </div>
         </CardContent>

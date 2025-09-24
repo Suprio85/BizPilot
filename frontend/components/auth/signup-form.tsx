@@ -2,18 +2,18 @@
 
 import type React from "react"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Eye, EyeOff, Mail, Lock, User, MapPin } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { useAuth } from "@/contexts/auth-context"
+import { Eye, EyeOff, Lock, Mail, MapPin, User } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -22,29 +22,45 @@ export function SignupForm() {
     businessStage: "",
     language: "en",
   })
+  const [error, setError] = useState("")
   const router = useRouter()
+  const { signup, isLoading } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setError("")
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    // Mock successful signup
-    localStorage.setItem("bizpilot_user", JSON.stringify({ email: formData.email, name: formData.name }))
-    router.push("/onboarding")
+    try {
+      await signup(formData)
+      router.push("/onboarding")
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Signup failed")
+    }
   }
 
-  const handleOAuthSignup = (provider: string) => {
+  const handleOAuthSignup = async (provider: string) => {
     console.log(`Signup with ${provider}`)
-    // Mock OAuth signup
-    localStorage.setItem("bizpilot_user", JSON.stringify({ email: "user@example.com", name: "User" }))
-    router.push("/onboarding")
+    try {
+      // Mock OAuth signup - in production, this would redirect to OAuth provider
+      await signup({
+        name: "User",
+        email: "user@example.com",
+        password: "oauth-password",
+        language: "en"
+      })
+      router.push("/onboarding")
+    } catch (error) {
+      setError("OAuth signup failed")
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+          {error}
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="name">Full Name</Label>
         <div className="relative">
